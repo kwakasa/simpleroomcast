@@ -8,6 +8,15 @@ namespace AP2Win.Core.Discovery;
 public sealed class MdnsDeviceDiscovery : IDeviceDiscovery
 {
     private const int MdnsPort = 5353;
+    private const int AnyAvailablePort = 0;
+    private const int DnsHeaderLength = 12;
+    private const int DnsQuestionCountOffset = 4;
+    private const ushort InternetClass = 1;
+    private const int MaximumDnsLabelLength = 63;
+    private const byte DnsNameTerminator = 0;
+    private const int UInt16Length = 2;
+    private const int PreferredServiceRank = 0;
+    private const int FallbackServiceRank = 1;
     private static readonly IPAddress MulticastAddress = IPAddress.Parse("224.0.0.251");
     private static readonly string[] ServiceTypes = ["_airplay._tcp.local", "_raop._tcp.local"];
 
@@ -35,7 +44,7 @@ public sealed class MdnsDeviceDiscovery : IDeviceDiscovery
                 var result = await socket.ReceiveFromAsync(
                     buffer,
                     SocketFlags.None,
-                    new IPEndPoint(IPAddress.Any, 0),
+                    new IPEndPoint(IPAddress.Any, AnyAvailablePort),
                     deadline.Token);
                 records.AddRange(MdnsPacketParser.Parse(buffer.AsSpan(0, result.ReceivedBytes)));
             }
@@ -68,15 +77,15 @@ public sealed class MdnsDeviceDiscovery : IDeviceDiscovery
     private static byte[] BuildQuery()
     {
         using var stream = new MemoryStream();
-        stream.Write(new byte[4]);
+        stream.Write(new byte[DnsQuestionCountOffset]);
         WriteUInt16(stream, ServiceTypes.Length);
-        stream.Write(new byte[6]);
+        stream.Write(new byte[DnsHeaderLength - DnsQuestionCountOffset - UInt16Length]);
 
         foreach (var serviceType in ServiceTypes)
         {
             WriteName(stream, serviceType);
             WriteUInt16(stream, (ushort)DnsRecordType.Ptr);
-            WriteUInt16(stream, 1);
+            WriteUInt16(stream, InternetClass);
         }
 
         return stream.ToArray();
@@ -120,7 +129,9 @@ public sealed class MdnsDeviceDiscovery : IDeviceDiscovery
         return devices
             .GroupBy(device => device.Id, StringComparer.OrdinalIgnoreCase)
             .Select(group => group
-                .OrderBy(device => device.ServiceType.StartsWith("_airplay", StringComparison.OrdinalIgnoreCase) ? 0 : 1)
+                .OrderBy(device => device.ServiceType.StartsWith("_airplay", StringComparison.OrdinalIgnoreCase)
+                    ? PreferredServiceRank
+                    : FallbackServiceRank)
                 .First())
             .OrderBy(device => device.Name, StringComparer.OrdinalIgnoreCase)
             .ToArray();
@@ -157,7 +168,7 @@ public sealed class MdnsDeviceDiscovery : IDeviceDiscovery
         foreach (var label in name.Split('.'))
         {
             var bytes = Encoding.UTF8.GetBytes(label);
-            if (bytes.Length is 0 or > 63)
+            if (bytes.Length is 0 or > MaximumDnsLabelLength)
             {
                 throw new InvalidOperationException($"Invalid DNS label: {label}");
             }
@@ -166,12 +177,12 @@ public sealed class MdnsDeviceDiscovery : IDeviceDiscovery
             stream.Write(bytes);
         }
 
-        stream.WriteByte(0);
+        stream.WriteByte(DnsNameTerminator);
     }
 
     private static void WriteUInt16(Stream stream, int value)
     {
-        Span<byte> bytes = stackalloc byte[2];
+        Span<byte> bytes = stackalloc byte[UInt16Length];
         BinaryPrimitives.WriteUInt16BigEndian(bytes, checked((ushort)value));
         stream.Write(bytes);
     }

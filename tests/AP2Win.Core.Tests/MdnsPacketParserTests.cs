@@ -8,15 +8,32 @@ namespace AP2Win.Core.Tests;
 
 public sealed class MdnsPacketParserTests
 {
+    private const int DnsHeaderLength = 12;
+    private const ushort ResponseWithAuthoritativeAnswerFlags = 0x8400;
+    private const ushort CacheFlushInternetClass = 0x8001;
+    private const uint FixtureRecordTimeToLiveSeconds = 120;
+    private const ushort FixtureAirPlayPort = 7000;
+    private const ushort DefaultSrvPriority = 0;
+    private const ushort DefaultSrvWeight = 0;
+    private const byte CompressionPointerMarker = 0xc0;
+    private const byte NameTerminator = 0;
+    private const int RootLabelOffset = 0;
+    private const int UInt16Length = 2;
+    private const int UInt32Length = 4;
+    private const ushort AirPlayResponseRecordCount = 4;
+    private const long StreamStartPosition = 0;
+    private static readonly IPAddress FixtureAddress = IPAddress.Parse("192.168.1.10");
+
     [Fact]
     public void ReadName_ResolvesCompressionPointer()
     {
-        byte[] packet =
-        [
-            5, (byte)'l', (byte)'o', (byte)'c', (byte)'a', (byte)'l', 0,
-            4, (byte)'t', (byte)'e', (byte)'s', (byte)'t', 0xc0, 0x00
-        ];
-        var offset = 7;
+        using var stream = new MemoryStream();
+        WriteName(stream, "local");
+        var offset = checked((int)stream.Position);
+        WriteLabel(stream, "test");
+        stream.WriteByte(CompressionPointerMarker);
+        stream.WriteByte(RootLabelOffset);
+        var packet = stream.ToArray();
 
         var name = MdnsPacketParser.ReadName(packet, ref offset);
 
@@ -36,7 +53,7 @@ public sealed class MdnsPacketParserTests
         Assert.Equal("Living Room._airplay._tcp.local", pointer.Target);
 
         var service = Assert.Single(records.OfType<SrvRecord>());
-        Assert.Equal(7000, service.Port);
+        Assert.Equal((int)FixtureAirPlayPort, service.Port);
         Assert.Equal("Sonos-ABC.local", service.Target);
 
         var text = Assert.Single(records.OfType<TxtRecord>());
@@ -44,55 +61,60 @@ public sealed class MdnsPacketParserTests
         Assert.Equal("Arc", text.Values["model"]);
 
         var address = Assert.Single(records.OfType<AddressRecord>());
-        Assert.Equal(IPAddress.Parse("192.168.1.10"), address.Address);
+        Assert.Equal(FixtureAddress, address.Address);
     }
 
     [Fact]
     public void Parse_RejectsTruncatedPacket()
     {
-        Assert.Throws<InvalidDataException>(() => MdnsPacketParser.Parse(new byte[11]));
+        Assert.Throws<InvalidDataException>(() =>
+            MdnsPacketParser.Parse(new byte[DnsHeaderLength - 1]));
     }
 
     private static byte[] BuildAirPlayResponse()
     {
         using var stream = new MemoryStream();
-        WriteUInt16(stream, 0);
-        WriteUInt16(stream, 0x8400);
-        WriteUInt16(stream, 0);
-        WriteUInt16(stream, 4);
-        WriteUInt16(stream, 0);
-        WriteUInt16(stream, 0);
+        WriteUInt16(stream, ushort.MinValue);
+        WriteUInt16(stream, ResponseWithAuthoritativeAnswerFlags);
+        WriteUInt16(stream, ushort.MinValue);
+        WriteUInt16(stream, AirPlayResponseRecordCount);
+        WriteUInt16(stream, ushort.MinValue);
+        WriteUInt16(stream, ushort.MinValue);
 
-        WriteRecord(stream, "_airplay._tcp.local", 12, data =>
+        WriteRecord(stream, "_airplay._tcp.local", DnsRecordType.Ptr, data =>
             WriteName(data, "Living Room._airplay._tcp.local"));
-        WriteRecord(stream, "Living Room._airplay._tcp.local", 33, data =>
+        WriteRecord(stream, "Living Room._airplay._tcp.local", DnsRecordType.Srv, data =>
         {
-            WriteUInt16(data, 0);
-            WriteUInt16(data, 0);
-            WriteUInt16(data, 7000);
+            WriteUInt16(data, DefaultSrvPriority);
+            WriteUInt16(data, DefaultSrvWeight);
+            WriteUInt16(data, FixtureAirPlayPort);
             WriteName(data, "Sonos-ABC.local");
         });
-        WriteRecord(stream, "Living Room._airplay._tcp.local", 16, data =>
+        WriteRecord(stream, "Living Room._airplay._tcp.local", DnsRecordType.Txt, data =>
         {
             WriteTxt(data, "manufacturer=Sonos");
             WriteTxt(data, "model=Arc");
         });
-        WriteRecord(stream, "Sonos-ABC.local", 1, data =>
-            data.Write([192, 168, 1, 10]));
+        WriteRecord(stream, "Sonos-ABC.local", DnsRecordType.A, data =>
+            data.Write(FixtureAddress.GetAddressBytes()));
 
         return stream.ToArray();
     }
 
-    private static void WriteRecord(Stream stream, string name, ushort type, Action<MemoryStream> writeData)
+    private static void WriteRecord(
+        Stream stream,
+        string name,
+        DnsRecordType type,
+        Action<MemoryStream> writeData)
     {
         WriteName(stream, name);
-        WriteUInt16(stream, type);
-        WriteUInt16(stream, 0x8001);
-        WriteUInt32(stream, 120);
+        WriteUInt16(stream, (ushort)type);
+        WriteUInt16(stream, CacheFlushInternetClass);
+        WriteUInt32(stream, FixtureRecordTimeToLiveSeconds);
         using var data = new MemoryStream();
         writeData(data);
         WriteUInt16(stream, checked((ushort)data.Length));
-        data.Position = 0;
+        data.Position = StreamStartPosition;
         data.CopyTo(stream);
     }
 
@@ -107,24 +129,29 @@ public sealed class MdnsPacketParserTests
     {
         foreach (var label in name.Split('.'))
         {
-            var bytes = Encoding.UTF8.GetBytes(label);
-            stream.WriteByte(checked((byte)bytes.Length));
-            stream.Write(bytes);
+            WriteLabel(stream, label);
         }
 
-        stream.WriteByte(0);
+        stream.WriteByte(NameTerminator);
+    }
+
+    private static void WriteLabel(Stream stream, string label)
+    {
+        var bytes = Encoding.UTF8.GetBytes(label);
+        stream.WriteByte(checked((byte)bytes.Length));
+        stream.Write(bytes);
     }
 
     private static void WriteUInt16(Stream stream, ushort value)
     {
-        Span<byte> bytes = stackalloc byte[2];
+        Span<byte> bytes = stackalloc byte[UInt16Length];
         BinaryPrimitives.WriteUInt16BigEndian(bytes, value);
         stream.Write(bytes);
     }
 
     private static void WriteUInt32(Stream stream, uint value)
     {
-        Span<byte> bytes = stackalloc byte[4];
+        Span<byte> bytes = stackalloc byte[UInt32Length];
         BinaryPrimitives.WriteUInt32BigEndian(bytes, value);
         stream.Write(bytes);
     }

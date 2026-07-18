@@ -23,6 +23,27 @@ internal sealed record AddressRecord(string Name, DnsRecordType AddressType, IPA
 internal static class MdnsPacketParser
 {
     private const int HeaderLength = 12;
+    private const int QuestionCountOffset = 4;
+    private const int AnswerCountOffset = 6;
+    private const int AuthorityCountOffset = 8;
+    private const int AdditionalCountOffset = 10;
+    private const int QuestionFooterLength = 4;
+    private const int RecordHeaderLength = 10;
+    private const int RecordDataLengthOffset = 8;
+    private const int SrvFixedFieldsLength = 6;
+    private const int SrvPortOffset = 4;
+    private const int Ipv4AddressLength = 4;
+    private const int Ipv6AddressLength = 16;
+    private const int LengthOctetSize = 1;
+    private const byte NameTerminator = 0;
+    private const byte CompressionMarkerMask = 0xc0;
+    private const byte CompressionPointerValueMask = 0x3f;
+    private const int CompressionPointerShift = 8;
+    private const int MaximumCompressionPointers = 32;
+    private const int MaximumLabelLength = 63;
+    private const int UInt16Length = 2;
+    private const byte EmptyTxtEntryLength = 0;
+    private const int TxtKeyValueSeparatorLength = 1;
 
     public static IReadOnlyList<DnsRecord> Parse(ReadOnlySpan<byte> packet)
     {
@@ -31,17 +52,17 @@ internal static class MdnsPacketParser
             throw new InvalidDataException("DNS packet is shorter than its header.");
         }
 
-        var questionCount = ReadUInt16(packet, 4);
-        var answerCount = ReadUInt16(packet, 6);
-        var authorityCount = ReadUInt16(packet, 8);
-        var additionalCount = ReadUInt16(packet, 10);
+        var questionCount = ReadUInt16(packet, QuestionCountOffset);
+        var answerCount = ReadUInt16(packet, AnswerCountOffset);
+        var authorityCount = ReadUInt16(packet, AuthorityCountOffset);
+        var additionalCount = ReadUInt16(packet, AdditionalCountOffset);
         var offset = HeaderLength;
 
         for (var index = 0; index < questionCount; index++)
         {
             _ = ReadName(packet, ref offset);
-            EnsureAvailable(packet, offset, 4);
-            offset += 4;
+            EnsureAvailable(packet, offset, QuestionFooterLength);
+            offset += QuestionFooterLength;
         }
 
         var records = new List<DnsRecord>();
@@ -49,10 +70,10 @@ internal static class MdnsPacketParser
         for (var index = 0; index < recordCount; index++)
         {
             var name = ReadName(packet, ref offset);
-            EnsureAvailable(packet, offset, 10);
+            EnsureAvailable(packet, offset, RecordHeaderLength);
             var type = (DnsRecordType)ReadUInt16(packet, offset);
-            var dataLength = ReadUInt16(packet, offset + 8);
-            offset += 10;
+            var dataLength = ReadUInt16(packet, offset + RecordDataLengthOffset);
+            offset += RecordHeaderLength;
             EnsureAvailable(packet, offset, dataLength);
 
             var record = ParseRecord(packet, name, type, offset, dataLength);
@@ -81,17 +102,17 @@ internal static class MdnsPacketParser
                 var offset = dataOffset;
                 return new PtrRecord(name, ReadName(packet, ref offset));
             }
-            case DnsRecordType.Srv when dataLength >= 6:
+            case DnsRecordType.Srv when dataLength >= SrvFixedFieldsLength:
             {
-                var port = ReadUInt16(packet, dataOffset + 4);
-                var offset = dataOffset + 6;
+                var port = ReadUInt16(packet, dataOffset + SrvPortOffset);
+                var offset = dataOffset + SrvFixedFieldsLength;
                 return new SrvRecord(name, port, ReadName(packet, ref offset));
             }
             case DnsRecordType.Txt:
                 return new TxtRecord(name, ParseTxt(packet.Slice(dataOffset, dataLength)));
-            case DnsRecordType.A when dataLength == 4:
+            case DnsRecordType.A when dataLength == Ipv4AddressLength:
                 return new AddressRecord(name, type, new IPAddress(packet.Slice(dataOffset, dataLength)));
-            case DnsRecordType.Aaaa when dataLength == 16:
+            case DnsRecordType.Aaaa when dataLength == Ipv6AddressLength:
                 return new AddressRecord(name, type, new IPAddress(packet.Slice(dataOffset, dataLength)));
             default:
                 return null;
@@ -106,7 +127,7 @@ internal static class MdnsPacketParser
         while (offset < data.Length)
         {
             var length = data[offset++];
-            if (length == 0)
+            if (length == EmptyTxtEntryLength)
             {
                 continue;
             }
@@ -120,7 +141,7 @@ internal static class MdnsPacketParser
             offset += length;
             var separator = entry.IndexOf('=');
             var key = separator >= 0 ? entry[..separator] : entry;
-            var value = separator >= 0 ? entry[(separator + 1)..] : string.Empty;
+            var value = separator >= 0 ? entry[(separator + TxtKeyValueSeparatorLength)..] : string.Empty;
             values[key] = value;
         }
 
@@ -136,9 +157,9 @@ internal static class MdnsPacketParser
 
         while (true)
         {
-            EnsureAvailable(packet, current, 1);
+            EnsureAvailable(packet, current, LengthOctetSize);
             var length = packet[current++];
-            if (length == 0)
+            if (length == NameTerminator)
             {
                 if (!jumped)
                 {
@@ -148,17 +169,17 @@ internal static class MdnsPacketParser
                 return string.Join('.', labels);
             }
 
-            if ((length & 0xc0) == 0xc0)
+            if ((length & CompressionMarkerMask) == CompressionMarkerMask)
             {
-                EnsureAvailable(packet, current, 1);
-                var pointer = ((length & 0x3f) << 8) | packet[current++];
+                EnsureAvailable(packet, current, LengthOctetSize);
+                var pointer = ((length & CompressionPointerValueMask) << CompressionPointerShift) | packet[current++];
                 if (!jumped)
                 {
                     offset = current;
                     jumped = true;
                 }
 
-                if (pointer >= packet.Length || ++pointerCount > 32)
+                if (pointer >= packet.Length || ++pointerCount > MaximumCompressionPointers)
                 {
                     throw new InvalidDataException("DNS name contains an invalid compression pointer.");
                 }
@@ -167,7 +188,7 @@ internal static class MdnsPacketParser
                 continue;
             }
 
-            if ((length & 0xc0) != 0 || length > 63)
+            if ((length & CompressionMarkerMask) != 0 || length > MaximumLabelLength)
             {
                 throw new InvalidDataException("DNS name contains an invalid label.");
             }
@@ -184,8 +205,8 @@ internal static class MdnsPacketParser
 
     private static ushort ReadUInt16(ReadOnlySpan<byte> packet, int offset)
     {
-        EnsureAvailable(packet, offset, 2);
-        return BinaryPrimitives.ReadUInt16BigEndian(packet.Slice(offset, 2));
+        EnsureAvailable(packet, offset, UInt16Length);
+        return BinaryPrimitives.ReadUInt16BigEndian(packet.Slice(offset, UInt16Length));
     }
 
     private static void EnsureAvailable(ReadOnlySpan<byte> packet, int offset, int length)

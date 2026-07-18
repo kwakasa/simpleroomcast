@@ -30,6 +30,22 @@ dotnet run --project src/AP2Win.Cli -- capture "Living Room"
 - Windows 10 or later for the future WASAPI capture path
 - Speaker and computer on the same multicast-enabled LAN
 
+Development is supported on macOS for the CLI, discovery, protocol, encoding,
+and unit-test layers. WASAPI capture and end-to-end playback must be validated
+on Windows.
+
+On an Apple silicon Mac, install and activate the Homebrew .NET 8 SDK:
+
+```bash
+brew install dotnet@8
+export DOTNET_ROOT="/opt/homebrew/opt/dotnet@8/libexec"
+export PATH="/opt/homebrew/opt/dotnet@8/bin:$PATH"
+```
+
+Add the two `export` lines to `~/.zshrc` if you want them applied to future
+terminal sessions. The repository's `global.json` accepts compatible .NET 8
+feature bands while preventing an accidental upgrade to a later major version.
+
 Build and test:
 
 ```powershell

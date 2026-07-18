@@ -12,6 +12,6 @@ public sealed record AirPlayDevice(
     IReadOnlyDictionary<string, string> Properties)
 {
     public string Endpoint => Addresses.Count > 0
-        ? $"{Addresses[0]}:{Port}"
+        ? $"{Addresses.First()}:{Port}"
         : $"{HostName}:{Port}";
 }
