@@ -1,4 +1,4 @@
-namespace ArcStream.Core;
+namespace AP2Win.Core;
 
 public interface IDeviceDiscovery
 {

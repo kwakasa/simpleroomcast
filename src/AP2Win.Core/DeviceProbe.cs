@@ -1,7 +1,7 @@
 using System.Diagnostics;
 using System.Net.Sockets;
 
-namespace ArcStream.Core;
+namespace AP2Win.Core;
 
 public sealed record ProbeResult(bool Reachable, TimeSpan Elapsed, string Detail);
 

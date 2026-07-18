@@ -3,7 +3,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 
-namespace ArcStream.Core.Discovery;
+namespace AP2Win.Core.Discovery;
 
 public sealed class MdnsDeviceDiscovery : IDeviceDiscovery
 {

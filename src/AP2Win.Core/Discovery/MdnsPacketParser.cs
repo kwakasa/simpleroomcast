@@ -2,7 +2,7 @@ using System.Buffers.Binary;
 using System.Net;
 using System.Text;
 
-namespace ArcStream.Core.Discovery;
+namespace AP2Win.Core.Discovery;
 
 internal enum DnsRecordType : ushort
 {

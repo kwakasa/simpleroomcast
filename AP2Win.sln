@@ -3,11 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArcStream.Core", "src\ArcStream.Core\ArcStream.Core.csproj", "{B224079A-E8F2-49A0-93BB-E581C5222C72}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AP2Win.Core", "src\AP2Win.Core\AP2Win.Core.csproj", "{B224079A-E8F2-49A0-93BB-E581C5222C72}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArcStream.Cli", "src\ArcStream.Cli\ArcStream.Cli.csproj", "{569DC18B-A97D-4B09-9399-54A147AE1B76}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AP2Win.Cli", "src\AP2Win.Cli\AP2Win.Cli.csproj", "{569DC18B-A97D-4B09-9399-54A147AE1B76}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArcStream.Core.Tests", "tests\ArcStream.Core.Tests\ArcStream.Core.Tests.csproj", "{C09D96D1-A5E2-45FD-9EE9-F668A07DD004}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AP2Win.Core.Tests", "tests\AP2Win.Core.Tests\AP2Win.Core.Tests.csproj", "{C09D96D1-A5E2-45FD-9EE9-F668A07DD004}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

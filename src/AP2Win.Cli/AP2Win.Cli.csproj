@@ -2,9 +2,9 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
-    <AssemblyName>arcstream</AssemblyName>
+    <AssemblyName>ap2win</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\ArcStream.Core\ArcStream.Core.csproj" />
+    <ProjectReference Include="..\AP2Win.Core\AP2Win.Core.csproj" />
   </ItemGroup>
 </Project>

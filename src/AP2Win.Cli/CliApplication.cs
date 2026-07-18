@@ -1,9 +1,9 @@
-using ArcStream.Core;
-using ArcStream.Core.Discovery;
+using AP2Win.Core;
+using AP2Win.Core.Discovery;
 using System.Net.Sockets;
 using System.Text.Json;
 
-namespace ArcStream.Cli;
+namespace AP2Win.Cli;
 
 internal static class CliApplication
 {
@@ -139,7 +139,7 @@ internal static class CliApplication
 
         if (matches.Length == 0)
         {
-            Console.Error.WriteLine($"No device matched '{selector}'. Run 'arcstream list' to see available devices.");
+            Console.Error.WriteLine($"No device matched '{selector}'. Run 'ap2win list' to see available devices.");
             return (null, 1);
         }
 
@@ -193,12 +193,12 @@ internal static class CliApplication
 
     private static void PrintHelp()
     {
-        Console.WriteLine("ArcStream - experimental Windows audio sender for AirPlay 2");
+        Console.WriteLine("AP2Win - experimental AirPlay 2 audio sender for Windows");
         Console.WriteLine();
         Console.WriteLine("Usage:");
-        Console.WriteLine("  arcstream list");
-        Console.WriteLine("  arcstream probe <speaker-name-or-id>");
-        Console.WriteLine("  arcstream inspect <speaker-name-or-id>");
-        Console.WriteLine("  arcstream capture <speaker-name-or-id>");
+        Console.WriteLine("  ap2win list");
+        Console.WriteLine("  ap2win probe <speaker-name-or-id>");
+        Console.WriteLine("  ap2win inspect <speaker-name-or-id>");
+        Console.WriteLine("  ap2win capture <speaker-name-or-id>");
     }
 }

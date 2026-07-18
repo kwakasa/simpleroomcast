@@ -1,4 +1,4 @@
-# ArcStream MVP plan
+# AP2Win MVP plan
 
 ## Outcome
 
@@ -66,7 +66,7 @@ without an Apple device participating.
 - [ ] Packetize and send a generated ALAC test tone
 - [ ] Add protocol transcript logging with secrets redacted
 
-Exit condition: `arcstream play-test <speaker>` produces stable sound for five
+Exit condition: `ap2win play-test <speaker>` produces stable sound for five
 minutes from a self-contained Windows process.
 
 ### M3 - live system audio
@@ -77,7 +77,7 @@ minutes from a self-contained Windows process.
 - [ ] Add clean cancellation and session teardown
 - [ ] Run one-hour playback and reconnect tests
 
-Exit condition: `arcstream capture <speaker>` streams the default Windows output
+Exit condition: `ap2win capture <speaker>` streams the default Windows output
 for one hour without unbounded memory growth or manual recovery.
 
 ### M4 - distributable MVP
@@ -93,7 +93,7 @@ for one hour without unbounded memory growth or manual recovery.
 Do not lock this decision before M1. The preferred order is:
 
 1. Extract a narrow native sender library from OwnTone's GPLv2+ AirPlay output
-   code and keep ArcStream GPLv2-compatible.
+   code and keep AP2Win GPLv2-compatible.
 2. If Unix dependencies make extraction impractical, implement the observed
    narrow protocol path in managed .NET under a GPL-compatible license.
 3. Do not ship WSL, Docker, or a Linux VM as the Windows MVP runtime.

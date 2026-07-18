@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace ArcStream.Core;
+namespace AP2Win.Core;
 
 public sealed record AirPlayDevice(
     string Id,

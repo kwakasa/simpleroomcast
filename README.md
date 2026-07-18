@@ -1,7 +1,7 @@
-# ArcStream
+# AP2Win
 
-ArcStream is an experimental open-source Windows CLI for sending system audio to
-an AirPlay 2 speaker, initially a first-generation Sonos Arc.
+AP2Win is an experimental open-source AirPlay 2 audio sender for Windows,
+initially targeting a first-generation Sonos Arc.
 
 The current bootstrap implements LAN discovery and endpoint probing. It does not
 stream audio yet. That boundary is deliberate: discovery, device compatibility,
@@ -11,10 +11,10 @@ or broad device support is added.
 ## Commands
 
 ```powershell
-dotnet run --project src/ArcStream.Cli -- list
-dotnet run --project src/ArcStream.Cli -- probe "Living Room"
-dotnet run --project src/ArcStream.Cli -- inspect "Living Room"
-dotnet run --project src/ArcStream.Cli -- capture "Living Room"
+dotnet run --project src/AP2Win.Cli -- list
+dotnet run --project src/AP2Win.Cli -- probe "Living Room"
+dotnet run --project src/AP2Win.Cli -- inspect "Living Room"
+dotnet run --project src/AP2Win.Cli -- capture "Living Room"
 ```
 
 - `list` discovers `_airplay._tcp` and `_raop._tcp` services for three seconds.

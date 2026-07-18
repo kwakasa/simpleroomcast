@@ -13,6 +13,6 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\ArcStream.Core\ArcStream.Core.csproj" />
+    <ProjectReference Include="..\..\src\AP2Win.Core\AP2Win.Core.csproj" />
   </ItemGroup>
 </Project>

@@ -1,10 +1,10 @@
 using System.Buffers.Binary;
 using System.Net;
 using System.Text;
-using ArcStream.Core.Discovery;
+using AP2Win.Core.Discovery;
 using Xunit;
 
-namespace ArcStream.Core.Tests;
+namespace AP2Win.Core.Tests;
 
 public sealed class MdnsPacketParserTests
 {
