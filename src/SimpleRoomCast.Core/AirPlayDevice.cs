@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace AP2Win.Core;
+namespace SimpleRoomCast.Core;
 
 public sealed record AirPlayDevice(
     string Id,

@@ -13,6 +13,6 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\src\AP2Win.Core\AP2Win.Core.csproj" />
+    <ProjectReference Include="..\..\src\SimpleRoomCast.Core\SimpleRoomCast.Core.csproj" />
   </ItemGroup>
 </Project>

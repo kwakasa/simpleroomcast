@@ -1,10 +1,10 @@
 using System.Buffers.Binary;
 using System.Net;
 using System.Text;
-using AP2Win.Core.Discovery;
+using SimpleRoomCast.Core.Discovery;
 using Xunit;
 
-namespace AP2Win.Core.Tests;
+namespace SimpleRoomCast.Core.Tests;
 
 public sealed class MdnsPacketParserTests
 {

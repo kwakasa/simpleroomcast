@@ -1,4 +1,4 @@
-namespace AP2Win.Core;
+namespace SimpleRoomCast.Core;
 
 public interface IDeviceDiscovery
 {

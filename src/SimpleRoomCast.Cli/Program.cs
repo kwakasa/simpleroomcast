@@ -1,3 +1,3 @@
-using AP2Win.Cli;
+using SimpleRoomCast.Cli;
 
 return await CliApplication.RunAsync(args);

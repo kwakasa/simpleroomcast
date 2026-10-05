@@ -1,9 +1,10 @@
-using AP2Win.Core;
-using AP2Win.Core.Discovery;
+using SimpleRoomCast.Core;
+using SimpleRoomCast.Core.Audio;
+using SimpleRoomCast.Core.Discovery;
 using System.Net.Sockets;
 using System.Text.Json;
 
-namespace AP2Win.Cli;
+namespace SimpleRoomCast.Cli;
 
 internal static class CliApplication
 {
@@ -11,6 +12,10 @@ internal static class CliApplication
     private const int SelectorIndex = 1;
     private const int CommandOnlyArgumentCount = 1;
     private const int CommandWithSelectorArgumentCount = 2;
+    private const int CaptureWithSourceArgumentCount = 4;
+    private const int CaptureSourceOptionIndex = 2;
+    private const int CaptureSourceValueIndex = 3;
+    private const string CaptureSourceOption = "--capture-source";
     private const int SuccessExitCode = 0;
     private const int GeneralFailureExitCode = 1;
     private const int InvalidArgumentsExitCode = 2;
@@ -44,7 +49,7 @@ internal static class CliApplication
                     await ProbeAsync(args[SelectorIndex], cancellation.Token),
                 "inspect" when args.Length == CommandWithSelectorArgumentCount =>
                     await InspectAsync(args[SelectorIndex], cancellation.Token),
-                "capture" when args.Length == CommandWithSelectorArgumentCount => Capture(args[SelectorIndex]),
+                "capture" when args.Length >= CommandWithSelectorArgumentCount => Capture(args),
                 _ => InvalidArguments()
             };
         }
@@ -152,7 +157,7 @@ internal static class CliApplication
 
         if (matches.Length == 0)
         {
-            Console.Error.WriteLine($"No device matched '{selector}'. Run 'ap2win list' to see available devices.");
+            Console.Error.WriteLine($"No device matched '{selector}'. Run 'simpleroomcast list' to see available devices.");
             return (null, GeneralFailureExitCode);
         }
 
@@ -170,12 +175,33 @@ internal static class CliApplication
         return (matches.First(), SuccessExitCode);
     }
 
-    private static int Capture(string selector)
+    private static int Capture(string[] args)
     {
+        var source = AudioCaptureSources.Default;
+        if (args.Length == CaptureWithSourceArgumentCount &&
+            args[CaptureSourceOptionIndex].Equals(CaptureSourceOption, StringComparison.OrdinalIgnoreCase) &&
+            AudioCaptureSources.TryParse(args[CaptureSourceValueIndex], out var requestedSource))
+        {
+            source = requestedSource;
+        }
+        else if (args.Length != CommandWithSelectorArgumentCount)
+        {
+            return InvalidArguments();
+        }
+
+        var selector = args[SelectorIndex];
         Console.Error.WriteLine($"Capture for '{selector}' is not implemented yet.");
-        Console.Error.WriteLine("Next milestone: establish an AirPlay 2 test-tone session, then add WASAPI loopback.");
+        Console.Error.WriteLine($"Selected capture source: {FormatCaptureSource(source)}.");
+        Console.Error.WriteLine("Next milestone: implement Sonos discovery and HTTP test-tone playback, then WASAPI capture.");
         return NotImplementedExitCode;
     }
+
+    private static string FormatCaptureSource(AudioCaptureSource source) => source switch
+    {
+        AudioCaptureSource.VirtualCable => AudioCaptureSources.VirtualCableOption,
+        AudioCaptureSource.DirectLoopback => AudioCaptureSources.DirectLoopbackOption,
+        _ => throw new ArgumentOutOfRangeException(nameof(source), source, "Unknown audio capture source.")
+    };
 
     private static Task<IReadOnlyList<AirPlayDevice>> DiscoverAsync(CancellationToken cancellationToken)
     {
@@ -206,12 +232,15 @@ internal static class CliApplication
 
     private static void PrintHelp()
     {
-        Console.WriteLine("AP2Win - experimental AirPlay 2 audio sender for Windows");
+        Console.WriteLine("SimpleRoomCast - stream Windows audio to Sonos. Simply.");
         Console.WriteLine();
         Console.WriteLine("Usage:");
-        Console.WriteLine("  ap2win list");
-        Console.WriteLine("  ap2win probe <speaker-name-or-id>");
-        Console.WriteLine("  ap2win inspect <speaker-name-or-id>");
-        Console.WriteLine("  ap2win capture <speaker-name-or-id>");
+        Console.WriteLine("  simpleroomcast list");
+        Console.WriteLine("  simpleroomcast probe <speaker-name-or-id>");
+        Console.WriteLine("  simpleroomcast inspect <speaker-name-or-id>");
+        Console.WriteLine(
+            "  simpleroomcast capture <speaker-name-or-id> [--capture-source vb-cable|loopback]");
+        Console.WriteLine();
+        Console.WriteLine("Capture defaults to vb-cable for an unprocessed signal path.");
     }
 }

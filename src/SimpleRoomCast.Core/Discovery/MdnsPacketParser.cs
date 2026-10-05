@@ -2,7 +2,7 @@ using System.Buffers.Binary;
 using System.Net;
 using System.Text;
 
-namespace AP2Win.Core.Discovery;
+namespace SimpleRoomCast.Core.Discovery;
 
 internal enum DnsRecordType : ushort
 {

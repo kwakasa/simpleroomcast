@@ -1,116 +1,117 @@
-# AP2Win MVP plan
+# SimpleRoomCast MVP plan
 
 ## Outcome
 
-Provide one dependable command that captures the Windows default playback device
-and sends stereo audio over the local network to one first-generation Sonos Arc.
+A small Windows tray application that sends system audio to a selected Sonos
+room with the convenience of TuneBlade.
 
 ```text
-WASAPI loopback -> PCM normalization -> ALAC -> AirPlay 2 -> Sonos Arc
+WASAPI loopback or VB-CABLE -> PCM normalization -> AAC/PCM HTTP stream -> Sonos
 ```
 
-The MVP is intended for music and casual media. It is not intended for gaming,
-calls, lip-synced video, surround playback, or remote-network use.
+The user has confirmed RoomRelay works with the target speaker. Evaluate reuse
+of its core before building another implementation. AirPlay is no longer a
+requirement. Music, podcasts, and background audio are the target use cases;
+Sonos buffering limits gaming, calls, and video lip-sync.
 
 ## Scope
 
 Included:
 
-- Windows 10 and 11
-- One selected AirPlay 2 receiver
-- Default-output WASAPI loopback capture
-- 48 kHz, 16-bit, stereo output
-- Discovery, explicit start/stop, reconnect, and useful diagnostics
-- CLI-first distribution
+- Windows 10 and 11; initial testing on a first-generation Sonos Arc
+- One selected Sonos room or existing group via its coordinator
+- VB-CABLE as the preferred capture source, with explicit loopback fallback
+- User-controlled Windows output routing, including app routing to VB-CABLE
+- Stereo audio; 48 kHz / 16-bit normalization where required by the stream format
+- Discovery, start/stop, Sonos volume, remembered settings, and reconnect
+- Compact tray UI with optional login startup and automatic connection
+- CLI diagnostics and self-contained Windows distribution
 
-Excluded:
+Excluded from MVP:
 
-- Multi-room synchronization
-- Per-application capture
-- Metadata and artwork
-- Video or screen mirroring
-- AirPlay receiver functionality
-- Virtual audio drivers
-- DRM circumvention
+- AirPlay and non-Sonos receivers
+- Custom drivers or bundled VB-CABLE installation
+- Independent multi-room clock synchronization or automatic group creation
+- Dedicated per-process capture, DSP/EQ, artwork, and metadata editing
+- Remote-network access and DRM circumvention
 
 ## Milestones
 
-### M0 - repository bootstrap
+### M0 - renamed prototype
 
-- [x] CLI command surface
-- [x] Dependency-free mDNS discovery
-- [x] TCP endpoint probe
-- [x] Unit tests for DNS message parsing
-- [ ] Verify build and tests on a machine with the .NET 8 SDK
-- [ ] Run `list` and `probe` against the target Arc
+- [x] Rename solution, projects, namespaces, and CLI to SimpleRoomCast
+- [x] CLI command surface and capture-source selection
+- [x] Legacy AirPlay mDNS discovery, endpoint probe, and DNS parser tests
+- [x] Verify predecessor build and tests with .NET 8 on macOS
+- [x] Validate renamed build and tests (Release: zero warnings; 9 tests pass on macOS)
 
-Exit condition: the Arc is consistently discovered and its advertised endpoint
-is reachable from Windows without Bonjour being installed.
+Existing `list`, `probe`, and `inspect` still use AirPlay service discovery.
+They are prototype diagnostics; Sonos SSDP discovery remains to be implemented.
 
-### M1 - sender compatibility spike
+### M1 - Sonos core and test tone
 
-- [ ] Establish a known-good AirPlay 2 session with current OwnTone
-- [ ] Feed live PCM through OwnTone pipe input
-- [ ] Record the Arc's mDNS TXT records and authentication behavior
-- [ ] Measure startup delay and 30-minute stability
-- [ ] Confirm stop, restart, and speaker power-cycle recovery
+- [ ] Inspect current RoomRelay core interfaces, dependencies, and license notices
+- [ ] Choose a fork, reusable core, or narrow adaptation with attribution
+- [ ] Discover Sonos through SSDP and resolve room/group coordinators
+- [ ] Host a bounded local HTTP stream reachable by the selected speaker
+- [ ] Implement AVTransport URI/play/stop and RenderingControl volume commands
+- [ ] Play a test tone on the Arc and measure startup delay and stop/restart behavior
 
-Exit condition: an open-source sender plays sustained live PCM on the exact Arc
-without an Apple device participating.
+Exit condition: `simpleroomcast play-test <room>` plays stable audio from Windows
+and stops cleanly. Network and encoding work stay in the user-mode process.
 
-### M2 - native Windows test tone
+### M2 - live Windows capture
 
-- [ ] Choose the sender-core strategy after M1 evidence
-- [ ] Implement pairing and session setup
-- [ ] Implement PTP/timing support needed by the Arc
-- [ ] Packetize and send a generated ALAC test tone
-- [ ] Add protocol transcript logging with secrets redacted
+- [ ] Enumerate active render/recording endpoints with stable device IDs
+- [ ] Capture VB-CABLE Output by default with actionable setup errors
+- [ ] Support direct WASAPI loopback through `--capture-source loopback`
+- [ ] Offer explicit device selection for ambiguous or renamed cable endpoints
+- [ ] Normalize format/channel layout and encode AAC using Windows APIs
+- [ ] Evaluate PCM as an optional stream format
+- [ ] Bound queues, handle slow readers, and insert idle silence as needed
+- [ ] Handle cancellation, endpoint changes, network loss, and speaker restarts
+- [ ] Validate one-hour playback and reconnect on Windows
 
-Exit condition: `ap2win play-test <speaker>` produces stable sound for five
-minutes from a self-contained Windows process.
+Exit condition: `simpleroomcast capture <room>` provides sustained audio without
+unbounded memory growth or manual recovery.
 
-### M3 - live system audio
+### M3 - everyday tray experience
 
-- [ ] Add WASAPI loopback capture
-- [ ] Normalize sample format and channel layout
-- [ ] Bound buffering and handle underruns
-- [ ] Add clean cancellation and session teardown
-- [ ] Run one-hour playback and reconnect tests
+- [ ] Compact room/source selector, start/stop, and Sonos volume
+- [ ] Tray controls, clear streaming status, and actionable errors
+- [ ] Persist room and capture preferences
+- [ ] Optional login startup and automatic connection
+- [ ] Reconnect with bounded backoff and visible status
+- [ ] Explain CABLE Input -> CABLE Output setup
 
-Exit condition: `ap2win capture <speaker>` streams the default Windows output
-for one hour without unbounded memory growth or manual recovery.
+Exit condition: streaming is operated from the tray without repeatedly opening
+advanced settings. Windows output selection remains under user control.
 
-### M4 - distributable MVP
+### M4 - distribution
 
-- [ ] Add structured diagnostics and actionable errors
-- [ ] Publish a self-contained x64 build
-- [ ] Add a minimal installer and Windows Firewall guidance
-- [ ] Test on clean Windows 10 and Windows 11 machines
-- [ ] Document known latency and firmware compatibility
+- [ ] Self-contained x64 package and minimal installer
+- [ ] Private-network Firewall guidance for the HTTP server
+- [ ] Diagnostics with sensitive identifiers redacted where appropriate
+- [ ] Clean-machine Windows tests and measured latency/compatibility notes
+- [ ] Third-party license audit and required notices
 
-## Sender-core decision
+## Architecture and licensing
 
-Do not lock this decision before M1. The preferred order is:
+Keep application orchestration in .NET. Prefer RoomRelay's proven Sonos transport
+and native Windows capture/encoding if practical to reuse. Choose a GUI framework
+after understanding the selected core's dependencies. Portable tests can run on
+macOS; WASAPI, Media Foundation, UI, and speaker integration require Windows.
 
-1. Extract a narrow native sender library from OwnTone's GPLv2+ AirPlay output
-   code and keep AP2Win GPLv2-compatible.
-2. If Unix dependencies make extraction impractical, implement the observed
-   narrow protocol path in managed .NET under a GPL-compatible license.
-3. Do not ship WSL, Docker, or a Linux VM as the Windows MVP runtime.
+The existing GPLv2-or-later LICENSE is preserved. Renaming and changing transport
+do not relicense code. Imported source must retain attribution and undergo a
+license-compatibility check before incorporation.
 
-## Quality gates
+## Quality gates and risks
 
-- No Apple software installation is required.
-- No kernel driver or administrator privilege is required for normal playback.
-- All network and protocol failures return a nonzero exit code.
-- Logs never contain pairing secrets or reusable credentials.
-- A firmware incompatibility is reported explicitly rather than as "no audio."
-
-## Key risks
-
-- AirPlay 2 sender behavior is reverse engineered and can change.
-- PTP timing and multicast behavior may differ across Windows networks.
-- The Arc may require pairing or timing behavior not exercised by older RAOP
-  implementations.
-- Expected buffering makes the MVP unsuitable as a low-latency game speaker.
-- Reusing OwnTone code requires GPLv2-compatible distribution.
+- Normal operation requires no administrator rights; separate VB-CABLE installation does.
+- Never silently change Windows output or fall back to physical loopback.
+- Bind HTTP to the interface used to reach Sonos and document trusted-LAN use.
+- CLI network/protocol failures return nonzero exit codes.
+- Measure Sonos buffering; do not promise zero latency.
+- Local Sonos interfaces and format support may vary with firmware and model.
+- Recovery must handle stale topology, disabled endpoints, and Firewall blocks.

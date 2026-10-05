@@ -2,9 +2,9 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>net8.0</TargetFramework>
-    <AssemblyName>ap2win</AssemblyName>
+    <AssemblyName>simpleroomcast</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\AP2Win.Core\AP2Win.Core.csproj" />
+    <ProjectReference Include="..\SimpleRoomCast.Core\SimpleRoomCast.Core.csproj" />
   </ItemGroup>
 </Project>
