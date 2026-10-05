@@ -6,7 +6,7 @@ A small Windows tray application that sends system audio to a selected Sonos
 room with the convenience of TuneBlade.
 
 ```text
-WASAPI loopback or VB-CABLE -> PCM normalization -> AAC/PCM HTTP stream -> Sonos
+Windows audio -> VB-CABLE -> WASAPI recording capture -> PCM normalization -> AAC/PCM HTTP stream -> Sonos
 ```
 
 The user has confirmed RoomRelay works with the target speaker. Evaluate reuse
@@ -20,7 +20,7 @@ Included:
 
 - Windows 10 and 11; initial testing on a first-generation Sonos Arc
 - One selected Sonos room or existing group via its coordinator
-- VB-CABLE as the preferred capture source, with explicit loopback fallback
+- VB-CABLE as the required and only capture source
 - User-controlled Windows output routing, including app routing to VB-CABLE
 - Stereo audio; 48 kHz / 16-bit normalization where required by the stream format
 - Discovery, start/stop, Sonos volume, remembered settings, and reconnect
@@ -31,6 +31,7 @@ Excluded from MVP:
 
 - AirPlay and non-Sonos receivers
 - Custom drivers or bundled VB-CABLE installation
+- Direct output-device loopback or microphone capture
 - Independent multi-room clock synchronization or automatic group creation
 - Dedicated per-process capture, DSP/EQ, artwork, and metadata editing
 - Remote-network access and DRM circumvention
@@ -40,10 +41,10 @@ Excluded from MVP:
 ### M0 - renamed prototype
 
 - [x] Rename solution, projects, namespaces, and CLI to SimpleRoomCast
-- [x] CLI command surface and capture-source selection
+- [x] CLI command surface restricted to VB-CABLE capture
 - [x] Legacy AirPlay mDNS discovery, endpoint probe, and DNS parser tests
 - [x] Verify predecessor build and tests with .NET 8 on macOS
-- [x] Validate renamed build and tests (Release: zero warnings; 9 tests pass on macOS)
+- [x] Validate renamed build and tests on macOS
 
 Existing `list`, `probe`, and `inspect` still use AirPlay service discovery.
 They are prototype diagnostics; Sonos SSDP discovery remains to be implemented.
@@ -63,8 +64,8 @@ and stops cleanly. Network and encoding work stay in the user-mode process.
 ### M2 - live Windows capture
 
 - [ ] Enumerate active render/recording endpoints with stable device IDs
-- [ ] Capture VB-CABLE Output by default with actionable setup errors
-- [ ] Support direct WASAPI loopback through `--capture-source loopback`
+- [ ] Capture VB-CABLE Output using WASAPI recording capture
+- [ ] Require an active cable endpoint; show actionable installation/enablement guidance when unavailable
 - [ ] Offer explicit device selection for ambiguous or renamed cable endpoints
 - [ ] Normalize format/channel layout and encode AAC using Windows APIs
 - [ ] Evaluate PCM as an optional stream format
@@ -77,9 +78,9 @@ unbounded memory growth or manual recovery.
 
 ### M3 - everyday tray experience
 
-- [ ] Compact room/source selector, start/stop, and Sonos volume
+- [ ] Compact room selector, VB-CABLE status, start/stop, and Sonos volume
 - [ ] Tray controls, clear streaming status, and actionable errors
-- [ ] Persist room and capture preferences
+- [ ] Persist room and cable endpoint preferences
 - [ ] Optional login startup and automatic connection
 - [ ] Reconnect with bounded backoff and visible status
 - [ ] Explain CABLE Input -> CABLE Output setup

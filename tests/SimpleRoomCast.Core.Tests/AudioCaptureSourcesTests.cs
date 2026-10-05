@@ -14,13 +14,21 @@ public sealed class AudioCaptureSourcesTests
     [Theory]
     [InlineData("vb-cable", AudioCaptureSource.VirtualCable)]
     [InlineData("VB-CABLE", AudioCaptureSource.VirtualCable)]
-    [InlineData("loopback", AudioCaptureSource.DirectLoopback)]
     public void TryParse_RecognizesSupportedOptions(string value, AudioCaptureSource expected)
     {
         var parsed = AudioCaptureSources.TryParse(value, out var source);
 
         Assert.True(parsed);
         Assert.Equal(expected, source);
+    }
+
+    [Theory]
+    [InlineData("loopback")]
+    [InlineData("microphone")]
+    [InlineData("")]
+    public void TryParse_RejectsNonCableSources(string value)
+    {
+        Assert.False(AudioCaptureSources.TryParse(value, out _));
     }
 
     [Fact]

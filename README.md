@@ -13,7 +13,7 @@ evaluate reuse of [RoomRelay](https://github.com/guicn555/RoomRelay)'s working c
 ## Current status
 
 This is a renamed prototype, not a working TuneBlade replacement yet. It has a
-CLI, legacy AirPlay mDNS discovery, TCP probing, and capture-source selection.
+CLI, legacy AirPlay mDNS discovery, TCP probing, and VB-CABLE endpoint matching.
 Sonos discovery/control, audio capture/streaming, and tray UI remain planned.
 
 ```powershell
@@ -21,14 +21,13 @@ dotnet run --project src/SimpleRoomCast.Cli -- list
 dotnet run --project src/SimpleRoomCast.Cli -- probe "Living Room"
 dotnet run --project src/SimpleRoomCast.Cli -- inspect "Living Room"
 dotnet run --project src/SimpleRoomCast.Cli -- capture "Living Room"
-dotnet run --project src/SimpleRoomCast.Cli -- capture "Living Room" --capture-source loopback
 ```
 
 - `list` currently discovers `_airplay._tcp` and `_raop._tcp` services.
 - `probe` tests the discovered device's TCP endpoint.
 - `inspect` emits a JSON discovery/TXT snapshot and probe result.
 - `capture` reports that streaming is unimplemented. It accepts
-  `--capture-source vb-cable|loopback`, defaulting to `vb-cable`.
+  `--capture-source vb-cable` for compatibility; VB-CABLE is the only supported source.
 
 ## Planned audio routing
 
@@ -44,10 +43,12 @@ Users can select CABLE Input as the system output or route individual apps to it
 through the Windows volume mixer. SimpleRoomCast will capture CABLE Output.
 Physical speakers do not automatically receive audio routed into the cable.
 
-VB-CABLE is separately installed donationware. Installation requires administrator
+VB-CABLE is required and must be installed separately. It is donationware. Installation requires administrator
 access and a restart. SimpleRoomCast will not bundle the driver or change the
-default Windows output automatically. Direct WASAPI loopback remains a planned
-fallback for setups without VB-CABLE.
+default Windows output automatically. If the cable is missing or disabled, the
+planned app will show setup guidance and refuse to stream; there is no direct
+loopback fallback. WASAPI will be used to read the cable's recording endpoint,
+not to capture a physical output device.
 
 Virtual-cable capture avoids unwanted physical-endpoint processing but does not
 remove Sonos buffering. Music and background audio are the primary use cases;

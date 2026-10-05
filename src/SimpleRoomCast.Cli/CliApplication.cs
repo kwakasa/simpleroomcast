@@ -192,14 +192,14 @@ internal static class CliApplication
         var selector = args[SelectorIndex];
         Console.Error.WriteLine($"Capture for '{selector}' is not implemented yet.");
         Console.Error.WriteLine($"Selected capture source: {FormatCaptureSource(source)}.");
-        Console.Error.WriteLine("Next milestone: implement Sonos discovery and HTTP test-tone playback, then WASAPI capture.");
+        Console.Error.WriteLine("VB-CABLE is required: route Windows audio to CABLE Input; capture uses CABLE Output.");
+        Console.Error.WriteLine("Next milestone: implement Sonos discovery and HTTP test-tone playback, then VB-CABLE recording capture using WASAPI.");
         return NotImplementedExitCode;
     }
 
     private static string FormatCaptureSource(AudioCaptureSource source) => source switch
     {
         AudioCaptureSource.VirtualCable => AudioCaptureSources.VirtualCableOption,
-        AudioCaptureSource.DirectLoopback => AudioCaptureSources.DirectLoopbackOption,
         _ => throw new ArgumentOutOfRangeException(nameof(source), source, "Unknown audio capture source.")
     };
 
@@ -239,8 +239,8 @@ internal static class CliApplication
         Console.WriteLine("  simpleroomcast probe <speaker-name-or-id>");
         Console.WriteLine("  simpleroomcast inspect <speaker-name-or-id>");
         Console.WriteLine(
-            "  simpleroomcast capture <speaker-name-or-id> [--capture-source vb-cable|loopback]");
+            "  simpleroomcast capture <speaker-name-or-id> [--capture-source vb-cable]");
         Console.WriteLine();
-        Console.WriteLine("Capture defaults to vb-cable for an unprocessed signal path.");
+        Console.WriteLine("Capture requires VB-CABLE. Route audio to CABLE Input; SimpleRoomCast captures CABLE Output.");
     }
 }

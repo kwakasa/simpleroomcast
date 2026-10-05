@@ -2,8 +2,7 @@ namespace SimpleRoomCast.Core.Audio;
 
 public enum AudioCaptureSource
 {
-    VirtualCable,
-    DirectLoopback
+    VirtualCable
 }
 
 public sealed record AudioCaptureEndpoint(string Id, string Name);
@@ -11,7 +10,6 @@ public sealed record AudioCaptureEndpoint(string Id, string Name);
 public static class AudioCaptureSources
 {
     public const string VirtualCableOption = "vb-cable";
-    public const string DirectLoopbackOption = "loopback";
 
     public static AudioCaptureSource Default => AudioCaptureSource.VirtualCable;
 
@@ -20,12 +18,6 @@ public static class AudioCaptureSources
         if (value.Equals(VirtualCableOption, StringComparison.OrdinalIgnoreCase))
         {
             source = AudioCaptureSource.VirtualCable;
-            return true;
-        }
-
-        if (value.Equals(DirectLoopbackOption, StringComparison.OrdinalIgnoreCase))
-        {
-            source = AudioCaptureSource.DirectLoopback;
             return true;
         }
 
